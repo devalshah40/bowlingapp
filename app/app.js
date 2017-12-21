@@ -8,7 +8,7 @@ app.config(['$routeProvider',
             templateUrl: 'partials/gamelogin.html',
             controller: 'bowlingCtrl'
         }).
-        when('/game', {
+        when('/game/:id', {
             title: 'Game',
             templateUrl: 'partials/game.html',
             controller: 'GameCtrl'

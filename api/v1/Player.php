@@ -52,7 +52,6 @@ class Player {
       return false;
     }
 
-    //xx var f = $this->currentFrame();
     if ($this->round === 20) {
       if ($this->rolls[$this->round - 2] == 10) {
         return false;

@@ -1,0 +1,41 @@
+<div>
+    <h1> This is Frame {{ game.currentPlayer().currentFrame() +1 }}
+        - {{ game.currentPlayer().currentChance()+1}}  /
+        {{ game.currentPlayer().numberOfChanceInCurrentFrame()}}
+    </h1>
+    <p> Hello {{game.currentPlayer().name}}! , this is your turn</p>
+    <p> {{ game.currentPlayer().standingPin()}} pins are standing up</p>
+    <p> Enter the number of pin you thrown
+        <input  ng-model="pin" type="number" min="0" max="{{game.currentPlayer().standingPin()}}"/>
+        <span class="error" ng-show="myForm.list.$error.required">
+                  Required!</span>
+        <span class="error" ng-show="myForm.list.$error.number">Not valid number!</span>
+        <button id="play-btn" ng-click="game.roll(pin);">Go</button>
+        <button id="play-btn-rnd" ng-click="game.roll_rnd();">Random</button>
+</div>
+
+<table border=1 width=100%>
+    <tr ng-repeat="player in players">
+        <td>
+            <div ng-class="'' || isActivePlayer(player) &&  'active-player'">{{player.name}}</div>
+        </td>
+        <td>
+            <table border=1 width=100%>
+                <tr>
+                    <td width=100 style='width:100px;' colspan="{{player.numberOfChanceInFrame(i)}}" ng-repeat="i in [0,1,2,3,4,5,6,7,8,9] track by $index">{{i+1}}</td>
+                </tr>
+                <tr>
+                    <td style='width:100px;' ng-repeat="s in player.scoreString() track by $index"> {{ s }}</td>
+                </tr>
+                <tr>
+                    <td  colspan="{{player.numberOfChanceInFrame(i)}}" ng-repeat="i in [0,1,2,3,4,5,6,7,8,9] track by $index">
+                        <div > {{player.frameScore(i)}}</div>
+                    </td>
+                </tr>
+            </table>
+        </td>
+        <td>
+            <div id="{{ 'score' + player.name}}">{{player.score()}}</div>
+        </td>
+    </tr>
+</table>

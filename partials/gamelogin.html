@@ -1,0 +1,35 @@
+
+
+        <!--<p>game status :  {{ game.status() }}</p>-->
+
+
+        <!-- Section to define and add users -->
+        <div id="adduser" >
+            <h3> Adding player to the party</h3>
+            <form name="myForm" angular-validator required >
+                <label>Name:</label>
+
+                <input required name='input' type="text" ng-model="playerName"
+                       placeholder="Enter a name here"
+                       invalid-message="'Player already exists.'"
+                       required-message = "'First name is required'"
+                       validator = "myCustomValidator(playerName)"
+                       validate-on="dirty"
+                >
+                <!--<span class="error" ng-show="myForm.input.$error.required">Required!</span>
+                <span class="error" ng-show="myForm.input.$error.pattern">Single word only!</span>-->
+
+                <button id="add_user_btn" ng-show="myForm.input.$valid"  ng-click="addPlayer(playerName)">Add</button>
+            </form>
+          <hr>
+        </div>
+
+        <table border=1 width=100%>
+            <tr ng-repeat="player in players">
+                <td>
+                    <div>{{player}}</div>
+                </td>
+            </tr>
+        </table>
+
+        <button ng-click="startGame()">Start Game</button>

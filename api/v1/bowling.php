@@ -1,46 +1,23 @@
 <?php
+require_once "Game.php";
+require_once "Player.php";
 
 $app->get('/game/:id', function ($id) {
+//
+//  $game = new Game(1);
+//  echo "<pre>";
+//  print_r($game);
+//  exit;
+//
+/*
+  $player = new Player(1,1);
+  echo "<pre>";
+  print_r($player);
+  print_r($player->scoreString());
+  exit;*/
 
-  $db = new DbHandler();
+  $game = new Game(1);
 
-  $gameDetails = $db->query("SELECT  * FROM game g INNER JOIN bowlers b ON g.`id` = b.`game_id` and g.id = '$id' INNER JOIN scores s ON s.`bowler_id` = b.`id`");
-
-  foreach ($gameDetails as $gameDetail) {
-    echo "<pre>";
-    print_r($gameDetail);
-    exit;
-  }
-  $gameName = 'Game ' . ($gameDetails['id'] + 1);
-  $table_name = "game";
-  $details = [
-    'game_name' => $gameName
-  ];
-  $column_names = array('game_name');
-  $gameID = $db->insertIntoTable($details, $column_names, $table_name);
-  if ($gameID != NULL) {
-    $table_name = "bowlers";
-    $column_names = array('game_id', 'bowler_name');
-
-    foreach ($r->players as $player) {
-      $details = [
-        'game_id' => $gameID,
-        'bowler_name' => $player
-      ];
-
-      $db->insertIntoTable($details, $column_names, $table_name);
-    }
-
-    $response["status"] = "success";
-    $response["message"] = $gameName . " is created successfully";
-    $response["gameID"] = $gameID;
-
-    echoResponse(200, $response);
-  } else {
-    $response["status"] = "error";
-    $response["message"] = "Failed to create Game. Please try again";
-    echoResponse(201, $response);
-  }
 });
 
 $app->post('/create-game', function () use ($app) {

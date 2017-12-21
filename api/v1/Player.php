@@ -8,8 +8,50 @@ class Player {
 
   const LAST_FRAME = 9;
 
-  public function __construct($id) {
+  public function __construct($game_id, $player_id) {
 
+    $this->rolls = array_fill(0,21,0);
+    $db = new DbHandler();
+
+
+    $playerDetails = $db->query("SELECT  * FROM bowlers b INNER JOIN scores s ON s.`bowler_id` = b.`id` AND b.`game_id` = '$game_id' AND b.id = '$player_id' ");
+/*
+//    $details = [];
+    $rolls = [];
+    $round = 0;
+    foreach ($playerDetails as $player) {
+      $rolls = [];
+      if (!empty($player['first_score'])) {
+//        $details[$player['bowler_id']]['rolls'][] = $player['first_score'];
+        $rolls[] = $player['first_score'];
+      }
+      if (!empty($player['second_score'])) {
+//        $details[$player['bowler_id']]['rolls'][] = $player['second_score'];
+        $rolls[] = $player['second_score'];
+      }
+      if (!empty($player['bonus_score'])) {
+//        $details[$player['bowler_id']]['rolls'][] = $player['bonus_score'];
+
+        $rolls[] = $player['bonus_score'];
+      }
+      if($round < 17 )
+      $round++;
+    }
+    $this->rolls = $rolls;*/
+
+
+    foreach ($playerDetails as $player) {
+      if (!empty($player['first_score'])) {
+        $this->roll($player['first_score']);
+      }
+      if (!empty($player['second_score'])) {
+        $this->roll($player['second_score']);
+      }
+      if (!empty($player['bonus_score'])) {
+        $this->roll($player['bonus_score']);
+      }
+    }
+//    $this->rolls = $rolls;
   }
 
 
@@ -70,10 +112,10 @@ class Player {
 
 
     if ($this->gameIsOver()) {
-      throw new Error(" Game is over");
+      throw new RuntimeException(" Game is over");
     }
     if ($pin < 0 || $pin > 10) {
-      throw new Error("Invalid number of pin");
+      throw new InvalidArgumentException("Invalid number of pin");
     }
 
     if ($pin > $this->standingPin()) {
@@ -124,9 +166,10 @@ class Player {
 
   public function frameText($frameNo, $i) {
 
-    if (($frameNo * 2 + $i) >= $this->round) {
+    if (( ($frameNo * 2) + $i) >= $this->round) {
       return ".";
     }
+
     if ($this->frameIsStrike($frameNo) && $frameNo < 9) {
       if ($i == 0) {
         return "";
@@ -177,6 +220,7 @@ class Player {
     $scores = [];
     for ($frame = 0; $frame < 10; $frame++) {
       array_push($scores, $this->frameText($frame, 0));
+//      echo "<pre>"; print_r($scores);exit;
       array_push($scores, $this->frameText($frame, 1));
     }
     array_push($scores, $this->frameText(9, 2));

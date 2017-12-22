@@ -23,10 +23,10 @@ class Game {
       $this->players[] = $player;
     }
 
-    $playerDetails = $db->query("SELECT  * FROM bowlers b INNER JOIN scores s ON s.`bowler_id` = b.`id` AND b.`game_id` = '$game_id' ");
+    $playerDetails = $db->query("SELECT  * FROM bowlers b INNER JOIN scores s ON s.`bowler_id` = b.`id` AND b.`game_id` = '$game_id' ORDER BY s.id ASC");
 
-    foreach ($playerDetails as $player) {
-
+    foreach ($playerDetails as $key => $player) {
+//      echo "<pre>"; print_r($player);
       if (!is_null($player['first_score'])) {
         $this->roll($player['first_score']);
       }
@@ -37,6 +37,7 @@ class Game {
         $this->roll($player['bonus_score']);
       }
     }
+//    exit;
   }
 
   public function roll($pin) {

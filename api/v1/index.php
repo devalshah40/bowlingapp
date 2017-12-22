@@ -37,7 +37,6 @@ function verifyRequiredParams($required_fields,$request_params) {
     }
 }
 
-
 function echoResponse($status_code, $response) {
     $app = \Slim\Slim::getInstance();
     // Http response code

@@ -11,7 +11,7 @@ app.config(['$routeProvider',
         when('/game/:id', {
             title: 'Game',
             templateUrl: 'partials/game.html',
-            controller: 'GameCtrl'
+            controller: 'gameCtrl'
         })
             .otherwise({
                 redirectTo: '/game-login'

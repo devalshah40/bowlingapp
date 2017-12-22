@@ -2,9 +2,10 @@
 
 class Player {
 
-  private $name = '';
-  private $rolls = [];
-  private $round = 0;
+  public $id = 0;
+  public $name = '';
+  public $rolls = [];
+  public $round = 0;
 
   const LAST_FRAME = 9;
 
@@ -13,47 +14,12 @@ class Player {
     $this->rolls = array_fill(0,21,0);
     $db = new DbHandler();
 
-
-    $playerDetails = $db->query("SELECT  * FROM bowlers b INNER JOIN scores s ON s.`bowler_id` = b.`id` AND b.`game_id` = '$game_id' AND b.id = '$player_id' ");
-/*
-//    $details = [];
-    $rolls = [];
-    $round = 0;
-    foreach ($playerDetails as $player) {
-      $rolls = [];
-      if (!empty($player['first_score'])) {
-//        $details[$player['bowler_id']]['rolls'][] = $player['first_score'];
-        $rolls[] = $player['first_score'];
-      }
-      if (!empty($player['second_score'])) {
-//        $details[$player['bowler_id']]['rolls'][] = $player['second_score'];
-        $rolls[] = $player['second_score'];
-      }
-      if (!empty($player['bonus_score'])) {
-//        $details[$player['bowler_id']]['rolls'][] = $player['bonus_score'];
-
-        $rolls[] = $player['bonus_score'];
-      }
-      if($round < 17 )
-      $round++;
+    $players = $db->query("SELECT  * FROM bowlers b WHERE b.`id` = '$player_id'");
+    foreach ($players as $player) {
+      $this->id = $player['id'];
+      $this->name = $player['bowler_name'];
     }
-    $this->rolls = $rolls;*/
-
-
-    foreach ($playerDetails as $player) {
-      if (!empty($player['first_score'])) {
-        $this->roll($player['first_score']);
-      }
-      if (!empty($player['second_score'])) {
-        $this->roll($player['second_score']);
-      }
-      if (!empty($player['bonus_score'])) {
-        $this->roll($player['bonus_score']);
-      }
-    }
-//    $this->rolls = $rolls;
   }
-
 
   public function currentFrame() {
 
@@ -102,14 +68,7 @@ class Player {
     return true;
   }
 
-  /**
-   *  records the number of pin knocked down by the player
-   *  and update current round counter accordingly.
-   *  the function will throw if number of pin is incompatible with
-   *  number of standing pins
-   */
   public function roll($pin) {
-
 
     if ($this->gameIsOver()) {
       throw new RuntimeException(" Game is over");
@@ -119,7 +78,7 @@ class Player {
     }
 
     if ($pin > $this->standingPin()) {
-      throw new Error("Not so many standing pin");
+      throw new InvalidArgumentException("Not so many standing pin");
     }
 
     $this->rolls[$this->round] = $pin;
@@ -148,7 +107,7 @@ class Player {
 
   public function frameIsStrike($frameNo) {
 
-    return $this->rolls[$frameNo * 2] === 10;
+    return $this->rolls[$frameNo * 2] == 10;
   }
 
 
@@ -169,7 +128,6 @@ class Player {
     if (( ($frameNo * 2) + $i) >= $this->round) {
       return ".";
     }
-
     if ($this->frameIsStrike($frameNo) && $frameNo < 9) {
       if ($i == 0) {
         return "";
@@ -215,22 +173,26 @@ class Player {
     return $score;
   }
 
+  public function frameWiseScore() {
+    $scores = [];
+    for ($frame = 0; $frame < 10; $frame++) {
+      array_push($scores, $this->frameScore($frame));
+    }
+    return $scores;
+  }
 
   public function scoreString() {
     $scores = [];
     for ($frame = 0; $frame < 10; $frame++) {
       array_push($scores, $this->frameText($frame, 0));
-//      echo "<pre>"; print_r($scores);exit;
       array_push($scores, $this->frameText($frame, 1));
     }
     array_push($scores, $this->frameText(9, 2));
     return $scores;
   }
 
-  public function score($maxFrame) {
+  public function score($maxFrame = 10) {
     $score = 0;
-
-    $maxFrame = ($maxFrame == null) && 10;
 
     for ($frame = 0; $frame < $maxFrame; $frame++) {
       $score += $this->frameScore($frame);

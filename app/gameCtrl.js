@@ -1,38 +1,42 @@
-app.controller('gameCtrl', function ($scope, $rootScope, $routeParams, $location, $http, Data) {
+app.controller('gameCtrl', function ($scope, $rootScope, $routeParams, $location, $http, Data, $routeParams) {
     //initially set those objects to null to avoid undefined error
 
-    $scope.gameID = $rootScope.gameID;
-    $scope.players = $rootScope.players;
 
+    Data.get('game/' + $routeParams.id)
+    .then(function (results) {
+        Data.toast(results);
+        //$rootScope.gameID = results.gameID;
+        $scope.players = results.players;
+        $scope.game = results.game;
 
-    $scope.myCustomValidator = function(playerName){
-        if($scope.players.indexOf(playerName) !== -1) {
-            return false;
-        }
-        return true;
-    };
+    });
+    
+    $scope.roll = function (pin) {
+        details = {
+            "game_id":$scope.game.id,
+            "pin":pin
+        };
 
-    $scope.addPlayer = function (playerName) {
-        if(playerName == '') {
-            return;
-        }
-        $scope.myForm.reset();
-        $scope.players.push(playerName);
-    };
-
-
-    $scope.startGame = function () {
-        Data.post('create-game', {
-            players: $scope.players
+        Data.post('add-pin', {
+            details: details
         }).then(function (results) {
-            Data.toast(results);
-            $rootScope.gameID = results.gameID;
-            $rootScope.players = $scope.players;
-
+            // Data.toast(results);
+            
             if (results.status == "success") {
-                $location.path('game');
+                $scope.players = results.players;
+                $scope.game = results.game;
             }
         });
     };
 
+    $scope.numberOfChanceInFrame = function(frame) {
+        if ( frame === 9 ) {
+            return 3;
+        }
+        return 2;
+    };
+
+    $scope.gotoLogin = function() {
+        $location.path('game-login');
+    };
 });

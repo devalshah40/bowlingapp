@@ -33,3 +33,13 @@
         </table>
 
         <button ng-click="startGame()">Start Game</button>
+
+        <br/>
+        <p ng-if="lastGames">Last Games</p>
+        <table border=1 width=100%>
+            <tr ng-repeat="game in lastGames">
+                <td>
+                    <a ng-href="#/game/{{game.id}}" >{{game.name}}</a>
+                </td>
+            </tr>
+        </table>

@@ -24,14 +24,16 @@ app.controller('bowlingCtrl', function ($scope, $rootScope, $routeParams, $locat
         Data.post('create-game', {
             players: $scope.players
         }).then(function (results) {
-            Data.toast(results);
-            $rootScope.gameID = results.gameID;
-            $rootScope.players = $scope.players;
+            Data.toast(results);           
 
             if (results.status == "success") {
-                $location.path('game');
+                $location.path('game/'+results.gameID);
             }
         });
     };
 
+    Data.get('load-last-games')
+     .then(function (results) {
+        $scope.lastGames = results.games;
+    });
 });

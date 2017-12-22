@@ -3,33 +3,67 @@ require_once "Game.php";
 require_once "Player.php";
 
 $app->get('/game/:id', function ($id) {
-//
-//  $game = new Game(1);
-//  echo "<pre>";
-//  print_r($game);
-//  exit;
-//
-/*
-  $player = new Player(1,1);
-  echo "<pre>";
-  print_r($player);
-  print_r($player->scoreString());
-  exit;*/
 
-  $game = new Game(1);
+  $game = new Game($id);
+  sendGameResponse($game);
+});
 
+$app->post('/add-pin', function () use ($app) {
+  $r = json_decode($app->request->getBody());
+
+  $db = new DbHandler();
+
+  $game = new Game($r->details->game_id);
+  $pin = $r->details->pin;
+  $currentPlayer = $game->currentPlayer();
+
+  $table_name = "scores";
+  $details = [
+    'bowler_id' => $currentPlayer->id,
+    'frame_no' => $currentPlayer->currentFrame() + 1  
+  ];
+
+  if($currentPlayer->currentChance() == 0) {
+    $details['first_score'] = $pin;
+  } else if($currentPlayer->currentChance() == 1) {
+    $details['second_score'] = $pin;
+  } else {
+    $details['bonus_score'] = $pin;
+  }
+
+  $game->roll($pin);
+  $details['frame_score'] = $currentPlayer->frameScore($details['frame_no'] - 1);
+
+  if(isset($details['first_score'])) {
+    $column_names = array_keys($details);
+    $db->insertIntoTable($details, $column_names, $table_name);
+  } else {
+    $column_name = (isset($details['second_score'])) ? 'second_score' : 'bonus_score';
+    $db->query("
+      UPDATE scores set 
+        $column_name = " . $pin . "
+       WHERE `bowler_id` = '". $details['bowler_id'] ."' AND 
+          `frame_no` = '". $details['frame_no'] ."' ");
+  }
+
+  $final_score = $currentPlayer->score();
+  if(isset($final_score)) {
+    $db->query("
+      UPDATE bowlers set 
+        final_score = " . $final_score. "
+       WHERE `id` = '". $currentPlayer->id ."' ");
+  }
+
+  sendGameResponse($game);
 });
 
 $app->post('/create-game', function () use ($app) {
   $r = json_decode($app->request->getBody());
-//  echo "<pre>";
-//  print_r($r);
-//  exit;
-
   $db = new DbHandler();
 
-  $gameDetails = $db->getOneRecord("select id from game order by id ");
+  $gameDetails = $db->getOneRecord("select id from game order by id desc");
   $gameName = 'Game ' . ($gameDetails['id'] + 1);
+
   $table_name = "game";
   $details = [
     'game_name' => $gameName
@@ -61,82 +95,47 @@ $app->post('/create-game', function () use ($app) {
   }
 });
 
-$app->post('/login', function () use ($app) {
-  $r = json_decode($app->request->getBody());
-  verifyRequiredParams(array('email', 'password'), $r->customer);
-  $response = array();
-  $db = new DbHandler();
-  $password = $r->customer->password;
-  $email = $r->customer->email;
-  $user = $db->getOneRecord("select uid,name,password,email,created from customers_auth where phone='$email' or email='$email'");
-  if ($user != NULL) {
-    if (passwordHash::check_password($user['password'], $password)) {
-      $response['status'] = "success";
-      $response['message'] = 'Logged in successfully.';
-      $response['name'] = $user['name'];
-      $response['uid'] = $user['uid'];
-      $response['email'] = $user['email'];
-      $response['createdAt'] = $user['created'];
-      if (!isset($_SESSION)) {
-        session_start();
-      }
-      $_SESSION['uid'] = $user['uid'];
-      $_SESSION['email'] = $email;
-      $_SESSION['name'] = $user['name'];
-    } else {
-      $response['status'] = "error";
-      $response['message'] = 'Login failed. Incorrect credentials';
-    }
-  } else {
-    $response['status'] = "error";
-    $response['message'] = 'No such user is registered';
+function sendGameResponse($game) {
+
+  $players = [];
+  foreach ($game->players as $key => $player) {
+    $players[$key]['name'] = $player->name;
+    $players[$key]['scores'] = $player->scoreString();
+    $players[$key]['frameWiseScore'] = $player->frameWiseScore();
+    $players[$key]['final_score'] = $player->score();
+    $players[$key]['round'] = $player->round;
   }
+
+  $response["status"] = "success";
+  $response["message"] = "Data is loaded successfully";
+  $response["players"] = $players;
+  $response["game"] = [
+    'currentFrame' => $game->currentPlayer()->currentFrame() + 1,
+    'currentChance' => $game->currentPlayer()->currentChance() + 1,
+    'totalCurrentChance' => $game->currentPlayer()->numberOfChanceInCurrentFrame(),
+    'currentPlayerName' => $game->currentPlayer()->name,
+    'standingPin' => $game->currentPlayer()->standingPin(),
+    'status' => $game->status(),
+    'id' => $game->id,
+    'name' => $game->name,
+  ];
+
+  echoResponse(200, $response);
+}
+
+$app->get('/load-last-games', function () {
+
+  $db = new DbHandler();
+  $gameDetails = $db->query("SELECT  * FROM game g order by g.`id` desc");
+
+  $games = [];
+  foreach ($gameDetails as $key =>  $game) {
+    $games[$key]['id'] = $game['id'];
+    $games[$key]['name'] = $game['game_name'];
+  }
+  $response["games"] = $games;
+
   echoResponse(200, $response);
 });
-$app->post('/signUp', function () use ($app) {
-  $response = array();
-  $r = json_decode($app->request->getBody());
-  verifyRequiredParams(array('email', 'name', 'password'), $r->customer);
-  $db = new DbHandler();
-  $phone = $r->customer->phone;
-  $name = $r->customer->name;
-  $email = $r->customer->email;
-  $address = $r->customer->address;
-  $password = $r->customer->password;
-  $isUserExists = $db->getOneRecord("select 1 from customers_auth where phone='$phone' or email='$email'");
-  if (!$isUserExists) {
-    $r->customer->password = passwordHash::hash($password);
-    $tabble_name = "customers_auth";
-    $column_names = array('phone', 'name', 'email', 'password', 'city', 'address');
-    $result = $db->insertIntoTable($r->customer, $column_names, $tabble_name);
-    if ($result != NULL) {
-      $response["status"] = "success";
-      $response["message"] = "User account created successfully";
-      $response["uid"] = $result;
-      if (!isset($_SESSION)) {
-        session_start();
-      }
-      $_SESSION['uid'] = $response["uid"];
-      $_SESSION['phone'] = $phone;
-      $_SESSION['name'] = $name;
-      $_SESSION['email'] = $email;
-      echoResponse(200, $response);
-    } else {
-      $response["status"] = "error";
-      $response["message"] = "Failed to create customer. Please try again";
-      echoResponse(201, $response);
-    }
-  } else {
-    $response["status"] = "error";
-    $response["message"] = "An user with the provided phone or email exists!";
-    echoResponse(201, $response);
-  }
-});
-$app->get('/logout', function () {
-  $db = new DbHandler();
-  $session = $db->destroySession();
-  $response["status"] = "info";
-  $response["message"] = "Logged out successfully";
-  echoResponse(200, $response);
-});
+
 ?>
